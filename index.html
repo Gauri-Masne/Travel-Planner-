@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atlas — AI Travel Assistant | IBM Watsonx.ai</title>
+
+  <!-- Bootstrap 5.3 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <!-- Marked.js (Markdown renderer) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Custom styles -->
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+
+<body>
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar navbar-expand-lg atlas-navbar fixed-top">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+        <span class="brand-globe">🌍</span>
+        <span class="brand-name">Atlas</span>
+        <span class="brand-sub badge">AI Travel</span>
+      </a>
+      <div class="d-flex align-items-center gap-3 ms-auto">
+        <span id="statusBadge" class="status-badge status-checking">
+          <span class="status-dot"></span> Connecting…
+        </span>
+        <button class="btn btn-sm btn-outline-secondary" id="themeToggle" title="Toggle theme">
+          <i class="bi bi-moon-stars-fill"></i>
+        </button>
+        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas"
+                data-bs-target="#sidebarOffcanvas">
+          <i class="bi bi-layout-sidebar"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== SIDEBAR (offcanvas on mobile, sticky on desktop) ===== -->
+  <div class="offcanvas offcanvas-start atlas-sidebar d-lg-block" tabindex="-1"
+       id="sidebarOffcanvas" style="width:260px;">
+    <div class="offcanvas-header d-lg-none">
+      <h6 class="offcanvas-title">Navigation</h6>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body p-0">
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label">PLAN</div>
+        <a href="#" class="sidebar-link active" data-panel="dashboard">
+          <i class="bi bi-grid-1x2-fill"></i> Dashboard
+        </a>
+        <a href="#" class="sidebar-link" data-panel="trip-planner">
+          <i class="bi bi-map-fill"></i> Trip Planner
+        </a>
+        <a href="#" class="sidebar-link" data-panel="itinerary">
+          <i class="bi bi-calendar3-fill"></i> Itinerary
+        </a>
+        <a href="#" class="sidebar-link" data-panel="budget">
+          <i class="bi bi-wallet2"></i> Budget Calculator
+        </a>
+
+        <div class="sidebar-section-label mt-2">DISCOVER</div>
+        <a href="#" class="sidebar-link" data-panel="destinations">
+          <i class="bi bi-compass-fill"></i> Destinations
+        </a>
+        <a href="#" class="sidebar-link" data-panel="compare">
+          <i class="bi bi-bar-chart-fill"></i> Compare
+        </a>
+        <a href="#" class="sidebar-link" data-panel="weather">
+          <i class="bi bi-cloud-sun-fill"></i> Weather
+        </a>
+
+        <div class="sidebar-section-label mt-2">LOGISTICS</div>
+        <a href="#" class="sidebar-link" data-panel="transport">
+          <i class="bi bi-airplane-fill"></i> Transport
+        </a>
+        <a href="#" class="sidebar-link" data-panel="accommodation">
+          <i class="bi bi-building-fill"></i> Accommodation
+        </a>
+        <a href="#" class="sidebar-link" data-panel="packing">
+          <i class="bi bi-bag-fill"></i> Packing List
+        </a>
+
+        <div class="sidebar-section-label mt-2">ME</div>
+        <a href="#" class="sidebar-link" data-panel="profile">
+          <i class="bi bi-person-circle"></i> Profile
+        </a>
+        <a href="#" class="sidebar-link" data-panel="chat">
+          <i class="bi bi-chat-dots-fill"></i> AI Chat
+        </a>
+      </nav>
+    </div>
+  </div>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+
+    <!-- ──────────────── DASHBOARD ──────────────── -->
+    <section id="panel-dashboard" class="panel active">
+      <div class="panel-header">
+        <h2><i class="bi bi-grid-1x2-fill text-accent"></i> Dashboard</h2>
+        <p class="text-muted">Your AI-powered travel command centre</p>
+      </div>
+
+      <!-- Hero welcome -->
+      <div class="hero-card card mb-4">
+        <div class="card-body p-4">
+          <div class="row align-items-center">
+            <div class="col-lg-8">
+              <h3 class="mb-1">Where will you go next? ✈️</h3>
+              <p class="text-muted mb-3">Ask Atlas anything — plan a trip, compare destinations, or get a packing list.</p>
+              <div class="input-group quick-search">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" id="quickSearch"
+                       placeholder="e.g. 7 days in Japan, budget $2000, solo traveller…" />
+                <button class="btn btn-accent" id="quickSearchBtn">
+                  <i class="bi bi-lightning-fill"></i> Ask Atlas
+                </button>
+              </div>
+            </div>
+            <div class="col-lg-4 d-none d-lg-block text-end">
+              <div class="globe-animation">🌍</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick-action cards -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="quick-card" data-panel="trip-planner">
+            <i class="bi bi-map-fill"></i>
+            <span>Plan Trip</span>
+          </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="quick-card" data-panel="destinations">
+            <i class="bi bi-compass-fill"></i>
+            <span>Discover</span>
+          </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="quick-card" data-panel="budget">
+            <i class="bi bi-wallet2"></i>
+            <span>Budget</span>
+          </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="quick-card" data-panel="compare">
+            <i class="bi bi-bar-chart-fill"></i>
+            <span>Compare</span>
+          </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="quick-card" data-panel="weather">
+            <i class="bi bi-cloud-sun-fill"></i>
+            <span>Weather</span>
+          </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="quick-card" data-panel="chat">
+            <i class="bi bi-chat-dots-fill"></i>
+            <span>AI Chat</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent / saved trips placeholder -->
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-clock-history text-accent"></i> Recent Plans</span>
+          <button class="btn btn-sm btn-outline-accent" id="clearRecentsBtn">Clear</button>
+        </div>
+        <div class="card-body p-0">
+          <div id="recentPlans" class="recent-plans-list">
+            <div class="text-center text-muted py-4">
+              <i class="bi bi-map" style="font-size:2rem;"></i>
+              <p class="mt-2 mb-0">No plans yet — start planning above!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────── TRIP PLANNER ──────────────── -->
+    <section id="panel-trip-planner" class="panel">
+      <div class="panel-header">
+        <h2><i class="bi bi-map-fill text-accent"></i> Trip Planner</h2>
+        <p class="text-muted">Generate a complete, personalised travel plan with IBM Granite AI</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-5">
+          <div class="card h-100">
+            <div class="card-header"><i class="bi bi-sliders text-accent"></i> Trip Details</div>
+            <div class="card-body">
+              <form id="tripForm">
+                <div class="mb-3">
+                  <label class="form-label">Destination <span class="text-danger">*</span></label>
+                  <input class="form-control" id="tp-destination" placeholder="e.g. Tokyo, Japan" required />
+                </div>
+                <div class="row g-2 mb-3">
+                  <div class="col-6">
+                    <label class="form-label">Duration (days)</label>
+                    <input type="number" class="form-control" id="tp-duration" value="7" min="1" max="90" />
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label">Travellers</label>
+                    <input type="number" class="form-control" id="tp-travelers" value="2" min="1" max="20" />
+                  </div>
+                </div>
+                <div class="row g-2 mb-3">
+                  <div class="col-8">
+                    <label class="form-label">Total Budget</label>
+                    <input type="number" class="form-control" id="tp-budget" placeholder="e.g. 3000" />
+                  </div>
+                  <div class="col-4">
+                    <label class="form-label">Currency</label>
+                    <select class="form-select" id="tp-currency">
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                      <option value="GBP">GBP</option>
+                      <option value="JPY">JPY</option>
+                      <option value="INR">INR</option>
+                      <option value="AUD">AUD</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Traveller Type</label>
+                  <select class="form-select" id="tp-traveler-type">
+                    <option value="solo">Solo</option>
+                    <option value="couple" selected>Couple</option>
+                    <option value="family">Family with kids</option>
+                    <option value="group">Group of friends</option>
+                    <option value="business">Business</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Transport Preference</label>
+                  <select class="form-select" id="tp-transport">
+                    <option value="mixed" selected>Mixed (best value)</option>
+                    <option value="flight">Flights only</option>
+                    <option value="train">Train / Rail</option>
+                    <option value="car">Self-drive</option>
+                    <option value="bus">Bus / Coach</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Accommodation</label>
+                  <select class="form-select" id="tp-accommodation">
+                    <option value="hostel">Hostel / Backpacker</option>
+                    <option value="budget-hotel">Budget Hotel</option>
+                    <option value="hotel" selected>Mid-range Hotel</option>
+                    <option value="boutique">Boutique Hotel</option>
+                    <option value="resort">Luxury Resort</option>
+                    <option value="airbnb">Vacation Rental</option>
+                  </select>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Travel Pace</label>
+                  <div class="btn-group w-100" id="tp-pace">
+                    <input type="radio" class="btn-check" name="pace" id="pace-relaxed" value="relaxed" />
+                    <label class="btn btn-outline-secondary" for="pace-relaxed">Relaxed</label>
+                    <input type="radio" class="btn-check" name="pace" id="pace-moderate" value="moderate" checked />
+                    <label class="btn btn-outline-secondary" for="pace-moderate">Moderate</label>
+                    <input type="radio" class="btn-check" name="pace" id="pace-packed" value="packed" />
+                    <label class="btn btn-outline-secondary" for="pace-packed">Action-packed</label>
+                  </div>
+                </div>
+                <div class="mb-4">
+                  <label class="form-label">Interests</label>
+                  <div class="interests-grid" id="interestsGrid">
+                    <span class="interest-tag" data-val="culture">🏛️ Culture</span>
+                    <span class="interest-tag" data-val="food">🍜 Food</span>
+                    <span class="interest-tag" data-val="adventure">🧗 Adventure</span>
+                    <span class="interest-tag" data-val="nature">🌿 Nature</span>
+                    <span class="interest-tag" data-val="shopping">🛍️ Shopping</span>
+                    <span class="interest-tag" data-val="beaches">🏖️ Beaches</span>
+                    <span class="interest-tag" data-val="nightlife">🎵 Nightlife</span>
+                    <span class="interest-tag" data-val="history">📜 History</span>
+                    <span class="interest-tag" data-val="art">🎨 Art</span>
+                    <span class="interest-tag" data-val="wellness">🧘 Wellness</span>
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-accent w-100">
+                  <i class="bi bi-lightning-fill"></i> Generate Plan with Atlas
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-7">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="bi bi-file-text text-accent"></i> Your Travel Plan</span>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-secondary" id="copyTripPlan" style="display:none">
+                  <i class="bi bi-clipboard"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" id="printTripPlan" style="display:none">
+                  <i class="bi bi-printer"></i>
+                </button>
+              </div>
+            </div>
+            <div class="card-body result-area" id="tripPlanResult">
+              <div class="empty-state">
+                <i class="bi bi-map"></i>
+                <p>Fill in your trip details and click<br/><strong>Generate Plan</strong></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────── ITINERARY ──────────────── -->
+    <section id="panel-itinerary" class="panel">
+      <div class="panel-header">
+        <h2><i class="bi bi-calendar3-fill text-accent"></i> Itinerary Manager</h2>
+        <p class="text-muted">Generate and manage detailed day-by-day itineraries</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-sliders text-accent"></i> Day Options</div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label">Destination</label>
+                <input class="form-control" id="it-destination" placeholder="e.g. Rome, Italy" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Day Number</label>
+                <input type="number" class="form-control" id="it-day" value="1" min="1" max="30" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Travel Pace</label>
+                <select class="form-select" id="it-pace">
+                  <option value="relaxed">Relaxed</option>
+                  <option value="moderate" selected>Moderate</option>
+                  <option value="packed">Action-packed</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Dietary Preferences</label>
+                <input class="form-control" id="it-dietary" placeholder="e.g. vegetarian, halal" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Interests</label>
+                <input class="form-control" id="it-interests" placeholder="e.g. museums, food, architecture" />
+              </div>
+              <button class="btn btn-accent w-100" id="generateItinerary">
+                <i class="bi bi-calendar-plus-fill"></i> Generate Day Plan
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-8">
+          <div class="card h-100">
+            <div class="card-header"><i class="bi bi-list-check text-accent"></i> Day Itinerary</div>
+            <div class="card-body result-area" id="itineraryResult">
+              <div class="empty-state">
+                <i class="bi bi-calendar3"></i>
+                <p>Set destination and day number<br/>to generate a detailed plan</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────── BUDGET ──────────────── -->
+    <section id="panel-budget" class="panel">
+      <div class="panel-header">
+        <h2><i class="bi bi-wallet2 text-accent"></i> Budget Calculator</h2>
+        <p class="text-muted">Get a detailed cost breakdown for your trip</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-calculator text-accent"></i> Budget Parameters</div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label">Destination <span class="text-danger">*</span></label>
+                <input class="form-control" id="bud-destination" placeholder="e.g. Barcelona, Spain" />
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label class="form-label">Duration (days)</label>
+                  <input type="number" class="form-control" id="bud-duration" value="7" min="1" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label">Travellers</label>
+                  <input type="number" class="form-control" id="bud-travelers" value="2" min="1" />
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Travel Style</label>
+                <select class="form-select" id="bud-style">
+                  <option value="budget">Budget / Backpacker</option>
+                  <option value="mid-range" selected>Mid-range</option>
+                  <option value="luxury">Luxury</option>
+                </select>
+              </div>
+              <div class="mb-4">
+                <label class="form-label">Include costs for</label>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="inc-flights" checked /><label class="form-check-label" for="inc-flights">Flights</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="inc-hotels" checked /><label class="form-check-label" for="inc-hotels">Hotels</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="inc-food" checked /><label class="form-check-label" for="inc-food">Food & Dining</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="inc-activities" checked /><label class="form-check-label" for="inc-activities">Activities & Tours</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="inc-transport" checked /><label class="form-check-label" for="inc-transport">Local Transport</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="inc-misc" /><label class="form-check-label" for="inc-misc">Misc / Shopping</label></div>
+              </div>
+              <button class="btn btn-accent w-100" id="calculateBudget">
+                <i class="bi bi-calculator-fill"></i> Calculate Budget
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-8">
+          <div class="card h-100">
+            <div class="card-header"><i class="bi bi-bar-chart text-accent"></i> Budget Breakdown</div>
+            <div class="card-body result-area" id="budgetResult">
+              <div class="empty-state">
+                <i class="bi bi-wallet2"></i>
+                <p>Enter destination and options<br/>to calculate your travel budget</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────── DESTINATIONS ──────────────── -->
+    <section id="panel-destinations" class="panel">
+      <div class="panel-header">
+        <h2><i class="bi bi-compass-fill text-accent"></i> Destination Discovery</h2>
+        <p class="text-muted">Get personalised destination recommendations from Atlas AI</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-funnel-fill text-accent"></i> Your Profile</div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label">Traveller Type</label>
+                <select class="form-select" id="dest-traveler-type">
+                  <option value="solo">Solo</option>
+                  <option value="couple" selected>Couple</option>
+                  <option value="family">Family</option>
+                  <option value="group">Group</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Budget Level</label>
+                <select class="form-select" id="dest-budget">
+                  <option value="budget">Budget</option>
+                  <option value="moderate" selected>Moderate</option>
+                  <option value="luxury">Luxury</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Trip Duration</label>
+                <select class="form-select" id="dest-duration">
+                  <option value="3-5">Short (3–5 days)</option>
+                  <option value="7-10" selected>Week (7–10 days)</option>
+                  <option value="14-21">Two weeks (14–21 days)</option>
+                  <option value="30+">Month+ (30+ days)</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Travel Month</label>
+                <select class="form-select" id="dest-month">
+                  <option value="any" selected>Any / Flexible</option>
+                  <option value="January">January</option>
+                  <option value="February">February</option>
+                  <option value="March">March</option>
+                  <option value="April">April</option>
+                  <option value="May">May</option>
+                  <option value="June">June</option>
+                  <option value="July">July</option>
+                  <option value="August">August</option>
+                  <option value="September">September</option>
+                  <option value="October">October</option>
+                  <option value="November">November</option>
+                  <option value="December">December</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Key Interests</label>
+                <input class="form-control" id="dest-interests" placeholder="e.g. beaches, culture, food" />
+              </div>
+              <div class="mb-4">
+                <label class="form-label">Exclude destinations</label>
+                <input class="form-control" id="dest-exclude" placeholder="e.g. Europe, USA" />
+              </div>
+              <button class="btn btn-accent w-100" id="discoverDestinations">
+                <i class="bi bi-compass-fill"></i> Discover Destinations
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-8">
+          <div class="card h-100">
+            <div class="card-header"><i class="bi bi-geo-alt-fill text-accent"></i> Recommendations</div>
+            <div class="card-body result-area" id="destinationsResult">
+              <div class="empty-state">
+                <i class="bi bi-compass"></i>
+                <p>Tell Atlas about yourself and<br/>discover your perfect destination</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────── COMPARE ──────────────── -->
+    <section id="panel-compare" class="panel">
+      <div class="panel-header">
+        <h2><i class="bi bi-bar-chart-fill text-accent"></i> Destination Comparison</h2>
+        <p class="text-muted">Compare up to 4 destinations side-by-side with AI analysis</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-sliders text-accent"></i> Comparison Setup</div>
+            <div class="card-body">
+              <label class="form-label">Destinations (2–4)</label>
+              <input class="form-control mb-2" id="cmp-dest1" placeholder="Destination 1 (e.g. Paris)" />
+              <input class="form-control mb-2" id="cmp-dest2" placeholder="Destination 2 (e.g. Tokyo)" />
+              <input class="form-control mb-2" id="cmp-dest3" placeholder="Destination 3 (optional)" />
+              <input class="form-control mb-3" id="cmp-dest4" placeholder="Destination 4 (optional)" />
+              <div class="mb-3">
+                <label class="form-label">Traveller Type</label>
+                <select class="form-select" id="cmp-traveler">
+                  <option value="solo">Solo</option>
+                  <option value="couple" selected>Couple</option>
+                  <option value="family">Family</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Travel Month</label>
+                <select class="form-select" id="cmp-month">
+                  <option value="any">Any</option>
+                  <option value="January">Jan</option><option value="February">Feb</option>
+                  <option value="March">Mar</option><option value="April">Apr</option>
+                  <option value="May">May</option><option value="June">Jun</option>
+                  <option value="July">Jul</option><option value="August">Aug</option>
+                  <option value="September">Sep</option><option value="October">Oct</option>
+                  <option value="November">Nov</option><option value="December">Dec</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Budget Level</label>
+                <select class="form-select" id="cmp-budget">
+                  <option value="budget">Budget</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="luxury">Luxury</option>
+                </select>
+              </div>
+              <div class="mb-4">
+                <label class="form-label">Compare by</label>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="crit-cost" checked /><label class="form-check-label" for="crit-cost">Cost of travel</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="crit-weather" checked /><label class="form-check-label" for="crit-weather">Weather</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="crit-attractions" checked /><label class="form-check-label" for="crit-attractions">Attractions</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="crit-safety" /><label class="form-check-label" for="crit-safety">Safety</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="crit-food" /><label class="form-check-label" for="crit-food">Food scene</label></div>
+              </div>
+              <button class="btn btn-accent w-100" id="compareDestinations">
+                <i class="bi bi-bar-chart-fill"></i> Compare Destinations
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-8">
+          <div class="card h-100">
+            <div class="card-header"><i class="bi bi-table text-accent"></i> Comparison Results</div>
+            <div class="card-body result-area" id="compareResult">
+              <div class="empty-state">
+                <i class="bi bi-bar-chart-line"></i>
+                <p>Enter 2–4 destinations and<br/>click Compare to see the analysis</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────── WEATHER ──────────────── -->
+    <section id="panel-weather" class="panel">
+      <div class="panel-header">
+        <h2><i class="bi bi-cloud-sun-fill text-accent"></i> Weather Planning</h2>
+        <p class="text-muted">Weather-aware travel advice and seasonal planning</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label">Destination <span class="text-danger">*</span></label>
+                <input class="form-control" id="wx-destination" placeholder="e.g. Bali, Indonesia" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Travel Month</label>
+                <select class="form-select" id="wx-month">
+                  <option value="January">January</option><option value="February">February</option>
+                  <option value="March">March</option><option value="April">April</option>
+                  <option value="May">May</option><option value="June" selected>June</option>
+                  <option value="July">July</option><option value="August">August</option>
+                  <option value="September">September</option><option value="October">October</option>
+                  <option value="November">November</option><option value="December">December</option>
+                </select>
+              </div>
+              <div class="mb-4">
+                <label class="form-label">Planned Activities</label>
+                <input class="form-control" id="wx-activities" placeholder="e.g. hiking, beach, sightseeing" />
+              </div>
+              <button class="btn btn-accent w-100" id="getWeather">
+                <i class="bi bi-cloud-sun-fill"></i> Get Weather Guide
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-8">
+          <div class="card h-100">
+            <div class="card-header"><i class="bi bi-thermometer-sun text-accent"></i> Weather Insights</div>
+            <div class="card-body result-area" id="weatherResult">
+              <div class="empty-state">
+                <i class="bi bi-cloud-sun"></i>
+                <p>Enter a destination and month for<br/>detailed weather-aware travel tips</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────── TRANSPORT ──────────────── -->
+    <section id="panel-transport" class="panel">
+      <div class="panel-header">
+        <h2><i class="bi bi-airplane-fill text-accent"></i> Transport Planner</h2>
+        <p class="text-muted">Find the best way to get there and get around</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label">From</label>
+                <input class="form-control" id="tr-origin" placeholder="e.g. London, UK" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">To <span class="text-danger">*</span></label>
+                <input class="form-control" id="tr-destination" placeholder="e.g. Amsterdam, Netherlands" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Travel Date</label>
+                <input type="date" class="form-control" id="tr-date" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Travellers</label>
+                <input type="number" class="form-control" id="tr-travelers" value="2" min="1" />
+              </div>
+              <div class="mb-4">
+                <label class="form-label">Priorities</label>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="pref-cost" checked /><label class="form-check-label" for="pref-cost">Lowest cost</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="pref-speed" checked /><label class="form-check-label" for="pref-speed">Fastest route</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="pref-comfort" /><label class="form-check-label" for="pref-comfort">Comfort</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="pref-eco" /><label class="form-check-label" for="pref-eco">Eco-friendly</label></div>
+              </div>
+              <button class="btn btn-accent w-100" id="planTransport">
+                <i class="bi bi-airplane-fill"></i> Plan Transport
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-8">
+          <div class="card h-100">
+            <div class="card-header"><i class="bi bi-signpost-2-fill text-accent"></i> Transport Options</div>
+            <div class="card-body result-area" id="transportResult">
+              <div class="empty-state">
+                <i class="bi bi-airplane"></i>
+                <p>Enter origin and destination<br/>to see all transport options</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────── ACCOMMODATION ──────────────── -->
+    <section id="panel-accommodation" class="panel">
+      <div class="panel-header">
+        <h2><i class="bi bi-building-fill text-accent"></i> Accommodation</h2>
+        <p class="text-muted">Find the perfect place to stay</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label">Destination <span class="text-danger">*</span></label>
+                <input class="form-control" id="acc-destination" placeholder="e.g. Paris, France" />
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label class="form-label">Check-in</label>
+                  <input type="date" class="form-control" id="acc-checkin" />
+                </div>
+                <div class="col-6">
+                  <label class="form-label">Check-out</label>
+                  <input type="date" class="form-control" id="acc-checkout" />
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Guests</label>
+                <input type="number" class="form-control" id="acc-travelers" value="2" min="1" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Accommodation Type</label>
+                <select class="form-select" id="acc-type">
+                  <option value="hostel">Hostel</option>
+                  <option value="budget-hotel">Budget Hotel</option>
+                  <option value="hotel" selected>Hotel</option>
+                  <option value="boutique">Boutique Hotel</option>
+                  <option value="resort">Resort</option>
+                  <option value="airbnb">Vacation Rental</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Max Budget / Night (USD)</label>
+                <input type="number" class="form-control" id="acc-budget" placeholder="e.g. 150" />
+              </div>
+              <div class="mb-4">
+                <label class="form-label">Must-have Amenities</label>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="am-wifi" checked /><label class="form-check-label" for="am-wifi">Free WiFi</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="am-breakfast" /><label class="form-check-label" for="am-breakfast">Breakfast included</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="am-pool" /><label class="form-check-label" for="am-pool">Swimming pool</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="am-parking" /><label class="form-check-label" for="am-parking">Free parking</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="am-gym" /><label class="form-check-label" for="am-gym">Fitness centre</label></div>
+              </div>
+              <button class="btn btn-accent w-100" id="findAccommodation">
+                <i class="bi bi-building-fill"></i> Find Accommodation
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-8">
+          <div class="card h-100">
+            <div class="card-header"><i class="bi bi-stars text-accent"></i> Accommodation Options</div>
+            <div class="card-body result-area" id="accommodationResult">
+              <div class="empty-state">
+                <i class="bi bi-building"></i>
+                <p>Enter destination and preferences<br/>to find accommodation options</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────── PACKING ──────────────── -->
+    <section id="panel-packing" class="panel">
+      <div class="panel-header">
+        <h2><i class="bi bi-bag-fill text-accent"></i> Packing List</h2>
+        <p class="text-muted">Smart AI-generated packing checklists for every trip</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-4">
+          <div class="card">
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label">Destination <span class="text-danger">*</span></label>
+                <input class="form-control" id="pk-destination" placeholder="e.g. Iceland" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Duration (days)</label>
+                <input type="number" class="form-control" id="pk-duration" value="10" min="1" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Climate</label>
+                <select class="form-select" id="pk-climate">
+                  <option value="tropical">Tropical / Hot & Humid</option>
+                  <option value="dry-hot">Dry / Desert</option>
+                  <option value="temperate" selected>Temperate</option>
+                  <option value="cold">Cold / Winter</option>
+                  <option value="arctic">Arctic / Extreme Cold</option>
+                  <option value="mixed">Mixed / Varied</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Activities</label>
+                <input class="form-control" id="pk-activities" placeholder="e.g. hiking, beach, city tours" />
+              </div>
+              <div class="mb-4">
+                <label class="form-label">Luggage Type</label>
+                <select class="form-select" id="pk-bag">
+                  <option value="carry-on">Carry-on only</option>
+                  <option value="checked" selected>Checked luggage</option>
+                  <option value="backpack">Backpack only</option>
+                </select>
+              </div>
+              <button class="btn btn-accent w-100" id="generatePacking">
+                <i class="bi bi-bag-fill"></i> Generate Packing List
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-8">
+          <div class="card h-100">
+            <div class="card-header"><i class="bi bi-check2-square text-accent"></i> Your Packing List</div>
+            <div class="card-body result-area" id="packingResult">
+              <div class="empty-state">
+                <i class="bi bi-bag"></i>
+                <p>Enter trip details to get<br/>your personalised packing list</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────── PROFILE ──────────────── -->
+    <section id="panel-profile" class="panel">
+      <div class="panel-header">
+        <h2><i class="bi bi-person-circle text-accent"></i> Traveller Profile</h2>
+        <p class="text-muted">Your preferences are used to personalise all AI recommendations</p>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-person-lines-fill text-accent"></i> Personal Details</div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label">Name</label>
+                <input class="form-control" id="prof-name" placeholder="Your name" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Nationality / Passport</label>
+                <input class="form-control" id="prof-nationality" placeholder="e.g. British" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Home City</label>
+                <input class="form-control" id="prof-home-city" placeholder="e.g. New York, USA" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Languages Spoken</label>
+                <input class="form-control" id="prof-languages" placeholder="e.g. English, Spanish" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Dietary Requirements</label>
+                <select class="form-select" id="prof-dietary">
+                  <option value="none">No restrictions</option>
+                  <option value="vegetarian">Vegetarian</option>
+                  <option value="vegan">Vegan</option>
+                  <option value="halal">Halal</option>
+                  <option value="kosher">Kosher</option>
+                  <option value="gluten-free">Gluten-free</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card">
+            <div class="card-header"><i class="bi bi-heart-fill text-accent"></i> Travel Preferences</div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label">Default Travel Style</label>
+                <select class="form-select" id="prof-style">
+                  <option value="budget">Budget</option>
+                  <option value="mid-range" selected>Mid-range</option>
+                  <option value="luxury">Luxury</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Preferred Accommodation</label>
+                <select class="form-select" id="prof-accommodation">
+                  <option value="hostel">Hostel</option>
+                  <option value="budget-hotel">Budget Hotel</option>
+                  <option value="hotel" selected>Hotel</option>
+                  <option value="resort">Resort</option>
+                  <option value="airbnb">Vacation Rental</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Preferred Transport</label>
+                <select class="form-select" id="prof-transport">
+                  <option value="mixed" selected>Mixed</option>
+                  <option value="flight">Flights</option>
+                  <option value="train">Train</option>
+                  <option value="car">Self-drive</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Top Interests (comma-separated)</label>
+                <input class="form-control" id="prof-interests" placeholder="e.g. culture, food, history" />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Destinations Visited</label>
+                <textarea class="form-control" id="prof-visited" rows="2" placeholder="e.g. France, Japan, Thailand…"></textarea>
+              </div>
+              <div class="d-flex gap-2">
+                <button class="btn btn-accent flex-grow-1" id="saveProfile">
+                  <i class="bi bi-floppy-fill"></i> Save Profile
+                </button>
+                <button class="btn btn-outline-secondary" id="clearProfile">
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────── AI CHAT ──────────────── -->
+    <section id="panel-chat" class="panel">
+      <div class="panel-header">
+        <h2><i class="bi bi-chat-dots-fill text-accent"></i> Chat with Atlas</h2>
+        <p class="text-muted">Ask anything about travel — Atlas is powered by IBM Granite AI</p>
+      </div>
+      <div class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-message assistant">
+            <div class="chat-avatar">🌍</div>
+            <div class="chat-bubble">
+              <p>Hello! I'm <strong>Atlas</strong>, your AI travel assistant powered by IBM Granite.</p>
+              <p class="mb-0">Ask me anything — plan a trip, get destination ideas, compare options, 
+              or get travel advice for any part of the world!</p>
+            </div>
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <div class="chat-suggestions" id="chatSuggestions">
+            <button class="sugg-btn">Plan 7 days in Japan for 2</button>
+            <button class="sugg-btn">Best beaches for January</button>
+            <button class="sugg-btn">Budget tips for Southeast Asia</button>
+            <button class="sugg-btn">Is Bali safe for solo women?</button>
+          </div>
+          <div class="input-group">
+            <textarea class="form-control chat-input" id="chatInput" rows="2"
+                      placeholder="Ask Atlas anything about travel…"></textarea>
+            <button class="btn btn-accent" id="sendChat">
+              <i class="bi bi-send-fill"></i>
+            </button>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <small class="text-muted">Press <kbd>Ctrl+Enter</kbd> to send</small>
+            <button class="btn btn-sm btn-outline-secondary" id="clearChat">
+              <i class="bi bi-trash3"></i> Clear history
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main><!-- /main-content -->
+
+  <!-- ===== LOADING OVERLAY ===== -->
+  <div id="loadingOverlay" class="loading-overlay" style="display:none">
+    <div class="loading-box">
+      <div class="loading-globe">🌍</div>
+      <div class="loading-bar">
+        <div class="loading-bar-fill"></div>
+      </div>
+      <p id="loadingMsg">Atlas is planning your trip…</p>
+    </div>
+  </div>
+
+  <!-- ===== TOAST NOTIFICATIONS ===== -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer"></div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- App JS -->
+  <script src="/static/js/main.js"></script>
+</body>
+</html>
